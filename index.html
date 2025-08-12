@@ -1,0 +1,2001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude + v0.dev Workflow Dashboard</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-dark: #1f2937;
+            --text-light: #6b7280;
+            --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            color: var(--text-dark);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Background Animation */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            z-index: -1;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(0.5deg); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 4rem 0;
+            color: white;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #ffffff, #e0e7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            font-weight: 400;
+        }
+
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .hero-cta:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Progress Dashboard */
+        .dashboard {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 3rem;
+            margin: 2rem 0;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--glass-border);
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .dashboard-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-subtitle {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        /* Quick Reference */
+        .quick-reference {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .quick-reference h3 {
+            text-align: center;
+            color: var(--text-dark);
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+
+        .workflow-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .workflow-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .step-badge {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .arrow {
+            color: var(--text-light);
+            font-weight: bold;
+        }
+
+        .platform-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: white;
+        }
+
+        .platform-badge.claude {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .platform-badge.code {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .platform-badge.v0 {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        }
+
+        .workflow-desc {
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .workflow-steps {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .workflow-item {
+                justify-content: center;
+                padding: 0.5rem;
+                background: rgba(255, 255, 255, 0.5);
+                border-radius: 8px;
+            }
+            
+            .arrow {
+                display: none;
+            }
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        /* Enhanced Progress Bar */
+        .progress-container {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 16px;
+            background: #e2e8f0;
+            border-radius: 50px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success-gradient);
+            width: 0%;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 50px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-text {
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-top: 1rem;
+            font-size: 1.1rem;
+        }
+
+        /* Steps Grid */
+        .steps-grid {
+            display: grid;
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .step-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2.5rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .step-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .step-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            border-color: #667eea;
+        }
+
+        .step-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .step-card.completed {
+            border-color: #10b981;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.02));
+        }
+
+        .step-card.completed::before {
+            background: var(--success-gradient);
+            transform: scaleX(1);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin-right: 1.5rem;
+            font-size: 1.2rem;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .step-number.completed {
+            background: var(--success-gradient);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .step-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            flex: 1;
+        }
+
+        .step-checkbox {
+            width: 28px;
+            height: 28px;
+            margin-left: 1rem;
+            cursor: pointer;
+            accent-color: #10b981;
+            transform: scale(1.2);
+        }
+
+        .step-description {
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+
+        .step-content {
+            display: none;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .step-content.active {
+            display: block;
+            animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideDown {
+            from { 
+                opacity: 0; 
+                transform: translateY(-20px);
+                max-height: 0;
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0);
+                max-height: 1000px;
+            }
+        }
+
+        .expand-btn {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .expand-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .expand-btn:active {
+            transform: translateY(0);
+        }
+
+        .prompt-box {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: #e2e8f0;
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .prompt-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+        }
+
+        .prompt-box strong {
+            color: #10b981;
+            display: block;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .checklist {
+            list-style: none;
+            margin: 1.5rem 0;
+        }
+
+        .checklist li {
+            display: flex;
+            align-items: center;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+        }
+
+        .checklist li:hover {
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+            transform: translateX(5px);
+        }
+
+        .checklist input[type="checkbox"] {
+            margin-right: 1rem;
+            transform: scale(1.2);
+            accent-color: #10b981;
+        }
+
+        /* Floating Action Button */
+        .floating-actions {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 1000;
+        }
+
+        .fab {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fab-reset {
+            background: var(--warning-gradient);
+        }
+
+        .fab-help {
+            background: var(--success-gradient);
+        }
+
+        .fab:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .hero {
+                padding: 2rem 0;
+            }
+            
+            .dashboard {
+                padding: 2rem 1.5rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+            }
+            
+            .step-card {
+                padding: 2rem 1.5rem;
+            }
+            
+            .floating-actions {
+                bottom: 1rem;
+                right: 1rem;
+            }
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: #1f2937;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>Claude + v0.dev Workflow</h1>
+            <p>Transform your development process with AI-powered assistance. From ideation to deployment, follow our structured workflow to build features faster and more efficiently than ever before.</p>
+            <a href="#dashboard" class="hero-cta">
+                <span>🚀</span>
+                Start Building Now
+            </a>
+        </div>
+    </section>
+
+    <!-- Platform Guide Section -->
+    <section class="platform-guide">
+        <div class="container">
+            <h2 style="text-align: center; color: white; font-size: 2.5rem; margin-bottom: 2rem;">🛠️ Platform Usage Guide</h2>
+            
+            <div class="platform-cards">
+                <div class="platform-card claude-desktop">
+                    <div class="platform-icon">🧠</div>
+                    <h3>Claude Desktop</h3>
+                    <p class="platform-description">Perfect for planning, analysis, and comprehensive guidance</p>
+                    <ul class="platform-features">
+                        <li>✅ Feature planning & architecture</li>
+                        <li>✅ Code review & analysis</li>
+                        <li>✅ Debugging strategy</li>
+                        <li>✅ Long-form documentation</li>
+                        <li>✅ Save as Projects for reference</li>
+                    </ul>
+                    <div class="platform-steps">
+                        <strong>Best for Steps:</strong> 1, 3, 6, 7
+                    </div>
+                </div>
+
+                <div class="platform-card claude-code">
+                    <div class="platform-icon">⚡</div>
+                    <h3>Claude Code</h3>
+                    <p class="platform-description">Terminal-based coding for direct file generation</p>
+                    <ul class="platform-features">
+                        <li>✅ Direct code generation</li>
+                        <li>✅ Test file creation</li>
+                        <li>✅ Config file generation</li>
+                        <li>✅ Batch file operations</li>
+                        <li>✅ Git integration</li>
+                    </ul>
+                    <div class="platform-steps">
+                        <strong>Best for Steps:</strong> 2, 4, 6, 7
+                    </div>
+                </div>
+
+                <div class="platform-card v0-dev">
+                    <div class="platform-icon">🎨</div>
+                    <h3>v0.dev</h3>
+                    <p class="platform-description">Rapid UI prototyping and frontend development</p>
+                    <ul class="platform-features">
+                        <li>✅ React component generation</li>
+                        <li>✅ UI/UX prototyping</li>
+                        <li>✅ Frontend integration</li>
+                        <li>✅ Visual development</li>
+                        <li>✅ Instant deployment</li>
+                    </ul>
+                    <div class="platform-steps">
+                        <strong>Best for Steps:</strong> 2, 5
+                    </div>
+                </div>
+
+                <div class="platform-card cursor">
+                    <div class="platform-icon">📝</div>
+                    <h3>Cursor / IDE</h3>
+                    <p class="platform-description">Enhanced coding environment with AI assistance</p>
+                    <ul class="platform-features">
+                        <li>✅ In-editor code completion</li>
+                        <li>✅ Real-time refactoring</li>
+                        <li>✅ Inline documentation</li>
+                        <li>✅ Code explanation</li>
+                        <li>✅ Context-aware suggestions</li>
+                    </ul>
+                    <div class="platform-steps">
+                        <strong>Best for:</strong> Implementation & Refinement
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <style>
+        .platform-guide {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 4rem 0;
+            margin: 2rem 0;
+        }
+
+        .platform-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .platform-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .platform-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .platform-card.claude-desktop {
+            border-color: #10b981;
+        }
+
+        .platform-card.claude-code {
+            border-color: #f59e0b;
+        }
+
+        .platform-card.v0-dev {
+            border-color: #3b82f6;
+        }
+
+        .platform-card.cursor {
+            border-color: #8b5cf6;
+        }
+
+        .platform-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .platform-card h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .platform-description {
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+        }
+
+        .platform-features {
+            list-style: none;
+            text-align: left;
+            margin-bottom: 1.5rem;
+        }
+
+        .platform-features li {
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+        }
+
+        .platform-steps {
+            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        @media (max-width: 768px) {
+            .platform-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <div class="container">
+        <div id="dashboard" class="dashboard">
+            <div class="dashboard-header">
+                <h2 class="dashboard-title">Your Development Dashboard</h2>
+                <p class="dashboard-subtitle">Track your progress through each phase of feature development</p>
+                
+                <!-- Quick Reference -->
+                <div class="quick-reference">
+                    <h3>🚀 Quick Start Guide</h3>
+                    <div class="workflow-steps">
+                        <div class="workflow-item">
+                            <span class="step-badge">1-3</span>
+                            <span class="arrow">→</span>
+                            <span class="platform-badge claude">Claude Desktop</span>
+                            <span class="workflow-desc">Plan, Generate, Review</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="step-badge">4</span>
+                            <span class="arrow">→</span>
+                            <span class="platform-badge code">Claude Code</span>
+                            <span class="workflow-desc">Generate Tests</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="step-badge">5</span>
+                            <span class="arrow">→</span>
+                            <span class="platform-badge v0">v0.dev</span>
+                            <span class="workflow-desc">Deploy & Test</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="step-badge">6-7</span>
+                            <span class="arrow">→</span>
+                            <span class="platform-badge claude">Claude Desktop</span>
+                            <span class="workflow-desc">CI/CD & Optimize</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="completed-count">0</div>
+                    <div class="stat-label">Steps Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="remaining-count">7</div>
+                    <div class="stat-label">Steps Remaining</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="progress-percent">0%</div>
+                    <div class="stat-label">Overall Progress</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="estimated-time">2h</div>
+                    <div class="stat-label">Est. Time Left</div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">Ready to transform your development workflow!</div>
+            </div>
+
+            <!-- Steps Grid -->
+            <div class="steps-grid">
+                <!-- Step 1: Define Feature -->
+                <div class="step-card" data-step="1">
+                    <div class="step-header">
+                        <div class="step-number">1</div>
+                        <div class="step-title">Define Your Feature Vision</div>
+                        <input type="checkbox" class="step-checkbox" data-step="1">
+                    </div>
+                    <div class="step-description">
+                        Create a clear, detailed description of your feature or problem. Define goals, target users, and expected functionality to guide the entire development process.
+                        <br><br>
+                        <strong>🎯 Platform: Claude Desktop</strong> | <strong>💾 Save as:</strong> Project in Claude Desktop for reference
+                    </div>
+                    <button class="expand-btn" onclick="toggleStep(1)">View Detailed Guide</button>
+                    <div class="step-content" id="step-1-content">
+                        <div class="prompt-box">
+                            <strong>📝 Copy This ENHANCED Prompt Template:</strong>
+                            **ROLE**: You are a Senior Product Architect and Technical Lead with 15+ years of experience building scalable web applications.<br><br>
+                            
+                            **CONTEXT**: I'm building a feature for [describe your target application/platform]. My target users are [describe user persona]. The business goal is [describe business objective].<br><br>
+                            
+                            **FEATURE REQUEST**: [Detailed feature description]<br><br>
+                            
+                            **DELIVERABLE**: Create a comprehensive Feature Development Blueprint that includes:<br><br>
+                            
+                            **1. USER STORY ANALYSIS**<br>
+                            • Primary user personas and their pain points<br>
+                            • User journey mapping from discovery to completion<br>
+                            • Edge cases and accessibility considerations<br>
+                            • Success criteria and user acceptance criteria<br><br>
+                            
+                            **2. TECHNICAL ARCHITECTURE**<br>
+                            • System architecture diagram (describe components)<br>
+                            • Database schema design with relationships<br>
+                            • API design patterns and endpoints<br>
+                            • Frontend component hierarchy<br>
+                            • Security and authentication requirements<br><br>
+                            
+                            **3. IMPLEMENTATION STRATEGY**<br>
+                            • Technology stack recommendations with justification<br>
+                            • Development phases with timeline estimates<br>
+                            • Risk assessment and mitigation strategies<br>
+                            • Performance benchmarks and optimization targets<br>
+                            • Testing strategy (unit, integration, e2e)<br><br>
+                            
+                            **4. BUSINESS IMPACT**<br>
+                            • Key Performance Indicators (KPIs) to track<br>
+                            • Revenue/engagement impact projections<br>
+                            • Rollout strategy and feature flagging approach<br>
+                            • Maintenance and scaling considerations<br><br>
+                            
+                            **CONSTRAINTS**: [Budget: X, Timeline: Y, Team size: Z, Existing tech stack: ABC]<br><br>
+                            
+                            **OUTPUT FORMAT**: Provide a structured document with clear sections, actionable recommendations, and specific next steps for immediate implementation.
+                        </div>
+                        <p><strong>💡 Pro Tips:</strong></p>
+                        <ul>
+                            <li>Be specific about your target audience and use cases</li>
+                            <li>Include any constraints (time, budget, technology stack)</li>
+                            <li>Consider edge cases and error scenarios early</li>
+                            <li>Define what "done" looks like for this feature</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Step 2: Generate Code -->
+                <div class="step-card" data-step="2">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <div class="step-title">Generate Core Implementation</div>
+                        <input type="checkbox" class="step-checkbox" data-step="2">
+                    </div>
+                    <div class="step-description">
+                        Transform your feature plan into working code. Generate well-structured, commented code that implements your core functionality with proper architecture patterns.
+                        <br><br>
+                        <strong>🎯 Platform:</strong> 
+                        <span style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; margin-right: 8px;">Claude Desktop</span>
+                        <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; margin-right: 8px;">Claude Code</span>
+                        <span style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem;">v0.dev</span>
+                        <br><br>
+                        <strong>💡 Choose based on:</strong> Claude Desktop (full-stack), Claude Code (terminal workflow), v0.dev (UI components)
+                    </div>
+                    <button class="expand-btn" onclick="toggleStep(2)">View Detailed Guide</button>
+                    <div class="step-content" id="step-2-content">
+                        <div class="prompt-box">
+                            <strong>⚡ Copy This ENHANCED Prompt Template:</strong>
+                            **ROLE**: You are a Principal Software Engineer with expertise in [React/Node.js/Python/etc.] and a track record of building production systems serving millions of users.<br><br>
+                            
+                            **CONTEXT**: Based on this feature blueprint: [insert your detailed feature description from Step 1]<br><br>
+                            
+                            **TASK**: Generate production-ready, enterprise-grade code implementation.<br><br>
+                            
+                            **TECHNICAL REQUIREMENTS**:<br>
+                            • **Language/Framework**: [Specify: React 18, Node.js 20, TypeScript 5.x, etc.]<br>
+                            • **Architecture Pattern**: [Clean Architecture, Hexagonal, MVC, etc.]<br>
+                            • **Database**: [PostgreSQL, MongoDB, Redis for caching, etc.]<br>
+                            • **Authentication**: [JWT, OAuth 2.0, Auth0, etc.]<br>
+                            • **Deployment**: [Docker, AWS Lambda, Vercel, etc.]<br><br>
+                            
+                            **CODE DELIVERABLES**:<br><br>
+                            
+                            **1. BACKEND IMPLEMENTATION**<br>
+                            • RESTful API endpoints with OpenAPI/Swagger documentation<br>
+                            • Database models with migrations and seed data<br>
+                            • Service layer with business logic separation<br>
+                            • Authentication and authorization middleware<br>
+                            • Input validation with comprehensive error handling<br>
+                            • Rate limiting and security headers<br>
+                            • Logging and monitoring instrumentation<br><br>
+                            
+                            **2. FRONTEND IMPLEMENTATION**<br>
+                            • Component architecture with proper state management<br>
+                            • Custom hooks for API integration and side effects<br>
+                            • Form handling with validation and UX feedback<br>
+                            • Loading states, error boundaries, and fallbacks<br>
+                            • Responsive design with mobile-first approach<br>
+                            • Accessibility (ARIA labels, keyboard navigation)<br>
+                            • Performance optimization (lazy loading, memoization)<br><br>
+                            
+                            **3. INFRASTRUCTURE CODE**<br>
+                            • Docker containerization with multi-stage builds<br>
+                            • Environment configuration management<br>
+                            • Database connection pooling and retry logic<br>
+                            • CI/CD pipeline configuration (GitHub Actions/GitLab)<br>
+                            • Monitoring setup (health checks, metrics endpoints)<br><br>
+                            
+                            **4. SECURITY IMPLEMENTATION**<br>
+                            • Input sanitization and SQL injection prevention<br>
+                            • CSRF protection and CORS configuration<br>
+                            • Secrets management and environment variables<br>
+                            • Data encryption at rest and in transit<br>
+                            • API rate limiting and DDoS protection<br><br>
+                            
+                            **CODE QUALITY STANDARDS**:<br>
+                            • Follow [Airbnb/Google/Company] style guide<br>
+                            • Include comprehensive JSDoc/docstring comments<br>
+                            • Implement design patterns appropriately<br>
+                            • Ensure 90%+ test coverage targets<br>
+                            • Use TypeScript for type safety (if applicable)<br>
+                            • Include performance benchmarks in comments<br><br>
+                            
+                            **OUTPUT FORMAT**: Provide complete, runnable code files with:<br>
+                            • File structure and import statements<br>
+                            • Configuration files (package.json, Dockerfile, etc.)<br>
+                            • Environment variable templates<br>
+                            • README with setup instructions<br>
+                            • Code comments explaining complex logic<br>
+                            • TODO comments for future enhancements
+                        </div>
+                        <p><strong>🎯 Best Practices:</strong></p>
+                        <ul>
+                            <li>Specify your preferred coding standards and conventions</li>
+                            <li>Request modular, testable code structure</li>
+                            <li>Include proper logging and monitoring hooks</li>
+                            <li>Ask for security considerations and input validation</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Step 3: Code Review -->
+                <div class="step-card" data-step="3">
+                    <div class="step-header">
+                        <div class="step-number">3</div>
+                        <div class="step-title">Expert Code Review & Analysis</div>
+                        <input type="checkbox" class="step-checkbox" data-step="3">
+                    </div>
+                    <div class="step-description">
+                        Get comprehensive code analysis, architectural insights, and improvement recommendations. Ensure your implementation follows best practices and is maintainable.
+                        <br><br>
+                        <strong>🎯 Platform:</strong> 
+                        <span style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem;">Claude Desktop</span>
+                        <br><br>
+                        <strong>💾 Workflow:</strong> Paste your generated code → Get detailed analysis → Save review as project notes
+                    </div>
+                    <button class="expand-btn" onclick="toggleStep(3)">View Detailed Guide</button>
+                    <div class="step-content" id="step-3-content">
+                        <div class="prompt-box">
+                            <strong>🔍 Copy This ENHANCED Prompt Template:</strong>
+                            **ROLE**: You are a Senior Staff Engineer and Code Review Expert with experience at FAANG companies, specializing in production system architecture and code quality at scale.<br><br>
+                            
+                            **CONTEXT**: Please conduct a comprehensive, production-readiness code review of the following implementation:<br><br>
+                            
+                            **CODE TO REVIEW**:<br>
+                            ```<br>
+                            [Paste your complete code implementation here - include all files]<br>
+                            ```<br><br>
+                            
+                            **REVIEW FRAMEWORK**: Use the following systematic approach:<br><br>
+                            
+                            **1. ARCHITECTURE & DESIGN REVIEW**<br>
+                            • **Separation of Concerns**: Evaluate component responsibilities and boundaries<br>
+                            • **Design Patterns**: Assess appropriate use of patterns (Factory, Observer, Strategy, etc.)<br>
+                            • **SOLID Principles**: Check Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion<br>
+                            • **Scalability**: Analyze bottlenecks and scaling limitations<br>
+                            • **Maintainability**: Evaluate code organization and future extensibility<br><br>
+                            
+                            **2. SECURITY DEEP DIVE**<br>
+                            • **OWASP Top 10**: Check for injection flaws, broken authentication, sensitive data exposure<br>
+                            • **Input Validation**: Assess sanitization, type checking, boundary validation<br>
+                            • **Authentication/Authorization**: Review session management, token handling, access controls<br>
+                            • **Data Protection**: Evaluate encryption, hashing, secure transmission<br>
+                            • **Attack Vectors**: Identify potential XSS, CSRF, SQL injection vulnerabilities<br><br>
+                            
+                            **3. PERFORMANCE ANALYSIS**<br>
+                            • **Time Complexity**: Analyze algorithm efficiency and Big O notation<br>
+                            • **Space Complexity**: Evaluate memory usage and potential leaks<br>
+                            • **Database Performance**: Review query optimization, indexing strategies, N+1 problems<br>
+                            • **Caching Strategy**: Assess caching layers and invalidation logic<br>
+                            • **Async Operations**: Evaluate promise handling, race conditions, deadlocks<br><br>
+                            
+                            **4. ERROR HANDLING & RESILIENCE**<br>
+                            • **Exception Management**: Review try-catch blocks, error propagation<br>
+                            • **Graceful Degradation**: Assess fallback mechanisms and circuit breakers<br>
+                            • **Logging Strategy**: Evaluate log levels, structured logging, sensitive data exposure<br>
+                            • **Monitoring**: Review metrics, health checks, alerting capabilities<br>
+                            • **Recovery Mechanisms**: Assess retry logic, backoff strategies<br><br>
+                            
+                            **5. CODE QUALITY METRICS**<br>
+                            • **Readability**: Evaluate naming conventions, code clarity, documentation<br>
+                            • **Complexity**: Assess cyclomatic complexity, nested conditions<br>
+                            • **Test Coverage**: Review test strategy, edge cases, integration tests<br>
+                            • **Dependencies**: Evaluate third-party libraries, version compatibility<br>
+                            • **Technical Debt**: Identify shortcuts, TODO items, refactoring opportunities<br><br>
+                            
+                            **6. PRODUCTION READINESS**<br>
+                            • **Configuration Management**: Review environment variables, feature flags<br>
+                            • **Deployment Strategy**: Assess blue-green, canary, rolling deployments<br>
+                            • **Backup & Recovery**: Evaluate data backup, disaster recovery procedures<br>
+                            • **Compliance**: Check GDPR, SOC2, industry-specific requirements<br>
+                            • **Documentation**: Review API docs, deployment guides, runbooks<br><br>
+                            
+                            **DELIVERABLE FORMAT**:<br><br>
+                            
+                            **EXECUTIVE SUMMARY** (Traffic light system)<br>
+                            🟢 **APPROVED** / 🟡 **NEEDS MINOR CHANGES** / 🔴 **NEEDS MAJOR REVISION**<br><br>
+                            
+                            **CRITICAL ISSUES** (Must fix before production)<br>
+                            • Issue 1: [Description + Code location + Fix recommendation]<br>
+                            • Issue 2: [Description + Code location + Fix recommendation]<br><br>
+                            
+                            **PERFORMANCE OPTIMIZATIONS** (Recommended improvements)<br>
+                            • Optimization 1: [Current implementation + Suggested improvement + Expected impact]<br>
+                            • Optimization 2: [Current implementation + Suggested improvement + Expected impact]<br><br>
+                            
+                            **SECURITY ENHANCEMENTS** (Risk-ranked recommendations)<br>
+                            • High Risk: [Vulnerability + Exploit scenario + Mitigation]<br>
+                            • Medium Risk: [Vulnerability + Exploit scenario + Mitigation]<br><br>
+                            
+                            **REFACTORING SUGGESTIONS** (Code quality improvements)<br>
+                            • Suggestion 1: [Current code + Refactored version + Benefits]<br>
+                            • Suggestion 2: [Current code + Refactored version + Benefits]<br><br>
+                            
+                            **BEST PRACTICES ALIGNMENT** (Industry standards check)<br>
+                            • Practice 1: [Current approach + Industry standard + Migration path]<br>
+                            • Practice 2: [Current approach + Industry standard + Migration path]<br><br>
+                            
+                            **NEXT STEPS PRIORITIZATION**<br>
+                            1. **P0 (Critical)**: [Immediate action items]<br>
+                            2. **P1 (High)**: [Important improvements]<br>
+                            3. **P2 (Medium)**: [Nice-to-have enhancements]<br><br>
+                            
+                            **ESTIMATED EFFORT**: Provide time estimates for implementing each recommendation category.
+                        </div>
+                        <p><strong>🎨 Review Focus Areas:</strong></p>
+                        <ul>
+                            <li>Code structure and organization</li>
+                            <li>Error handling and edge case coverage</li>
+                            <li>Performance and memory efficiency</li>
+                            <li>Security and data validation</li>
+                            <li>Documentation and code clarity</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Step 4: Testing -->
+                <div class="step-card" data-step="4">
+                    <div class="step-header">
+                        <div class="step-number">4</div>
+                        <div class="step-title">Comprehensive Testing Suite</div>
+                        <input type="checkbox" class="step-checkbox" data-step="4">
+                    </div>
+                    <div class="step-description">
+                        Build a robust testing framework with unit tests, integration tests, and validation logic. Ensure your feature works reliably across all scenarios.
+                        <br><br>
+                        <strong>🎯 Platform:</strong> 
+                        <span style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; margin-right: 8px;">Claude Desktop</span>
+                        <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem;">Claude Code</span>
+                        <br><br>
+                        <strong>💡 Best for:</strong> Claude Desktop (planning), Claude Code (test file generation)
+                    </div>
+                    <button class="expand-btn" onclick="toggleStep(4)">View Detailed Guide</button>
+                    <div class="step-content" id="step-4-content">
+                        <div class="prompt-box">
+                            <strong>🧪 Copy This ENHANCED Prompt Template:</strong>
+                            **ROLE**: You are a Senior QA Engineer and Test Automation Architect with expertise in comprehensive testing strategies for enterprise applications.<br><br>
+                            
+                            **CONTEXT**: Create a complete testing ecosystem for this production application:<br><br>
+                            
+                            **APPLICATION CODE**:<br>
+                            ```<br>
+                            [Paste your complete application code here]<br>
+                            ```<br><br>
+                            
+                            **TESTING REQUIREMENTS**: Build a comprehensive test suite with 95%+ coverage<br><br>
+                            
+                            **1. UNIT TESTING FRAMEWORK**<br><br>
+                            
+                            **Frontend Unit Tests** ([Jest/Vitest/Cypress Component Testing])<br>
+                            • **Component Testing**: Test all React/Vue components in isolation<br>
+                            • **Hook Testing**: Test custom hooks with React Testing Library<br>
+                            • **Utility Function Testing**: Test pure functions with edge cases<br>
+                            • **State Management Testing**: Test Redux/Zustand/Context state mutations<br>
+                            • **API Integration Testing**: Mock HTTP calls and test error scenarios<br>
+                            • **Form Validation Testing**: Test all validation rules and user feedback<br>
+                            • **Accessibility Testing**: Test ARIA attributes, keyboard navigation<br><br>
+                            
+                            **Backend Unit Tests** ([Jest/Mocha/pytest/RSpec])<br>
+                            • **API Endpoint Testing**: Test all REST/GraphQL endpoints<br>
+                            • **Service Layer Testing**: Test business logic in isolation<br>
+                            • **Database Model Testing**: Test CRUD operations and relationships<br>
+                            • **Authentication Testing**: Test login, logout, token validation<br>
+                            • **Authorization Testing**: Test role-based access controls<br>
+                            • **Middleware Testing**: Test request/response processing<br>
+                            • **Error Handler Testing**: Test exception scenarios<br><br>
+                            
+                            **2. INTEGRATION TESTING SUITE**<br><br>
+                            
+                            **API Integration Tests**<br>
+                            • **End-to-End API Flows**: Test complete user journeys<br>
+                            • **Database Integration**: Test with real database connections<br>
+                            • **Third-Party Service Integration**: Test external API dependencies<br>
+                            • **File Upload/Download**: Test multipart form handling<br>
+                            • **WebSocket Testing**: Test real-time communication<br>
+                            • **Email/SMS Integration**: Test notification systems<br><br>
+                            
+                            **Frontend Integration Tests**<br>
+                            • **User Journey Testing**: Test complete workflows<br>
+                            • **Cross-Component Communication**: Test component interactions<br>
+                            • **Routing Testing**: Test navigation and guards<br>
+                            • **Form Submission**: Test end-to-end form processing<br>
+                            • **Real-Time Updates**: Test WebSocket/SSE integration<br><br>
+                            
+                            **3. END-TO-END TESTING** ([Playwright/Cypress/Selenium])<br><br>
+                            
+                            **Critical User Flows**<br>
+                            • **User Registration/Login**: Complete authentication flow<br>
+                            • **Core Feature Usage**: Test primary user scenarios<br>
+                            • **Payment Processing**: Test checkout and billing flows<br>
+                            • **Admin Workflows**: Test administrative functions<br>
+                            • **Mobile Responsiveness**: Test across device sizes<br>
+                            • **Cross-Browser Testing**: Test Chrome, Firefox, Safari, Edge<br><br>
+                            
+                            **4. PERFORMANCE TESTING**<br><br>
+                            
+                            **Load Testing** ([Artillery/k6/JMeter])<br>
+                            • **API Load Testing**: Test response times under load<br>
+                            • **Database Performance**: Test query performance at scale<br>
+                            • **Memory Usage**: Test for memory leaks and optimization<br>
+                            • **Concurrent User Testing**: Test multi-user scenarios<br>
+                            • **Stress Testing**: Test breaking points and recovery<br><br>
+                            
+                            **Frontend Performance**<br>
+                            • **Lighthouse Audits**: Test Core Web Vitals<br>
+                            • **Bundle Size Analysis**: Test JavaScript payload<br>
+                            • **Image Optimization**: Test lazy loading and compression<br>
+                            • **Rendering Performance**: Test paint and layout metrics<br><br>
+                            
+                            **5. SECURITY TESTING**<br><br>
+                            
+                            **Automated Security Tests**<br>
+                            • **Input Validation**: Test SQL injection, XSS prevention<br>
+                            • **Authentication**: Test brute force, session hijacking<br>
+                            • **Authorization**: Test privilege escalation scenarios<br>
+                            • **CSRF Protection**: Test cross-site request forgery<br>
+                            • **Rate Limiting**: Test API abuse prevention<br>
+                            • **Data Encryption**: Test sensitive data handling<br><br>
+                            
+                            **6. ACCESSIBILITY TESTING**<br><br>
+                            
+                            **A11y Test Suite** ([axe-core/Pa11y])<br>
+                            • **Screen Reader Testing**: Test with NVDA, JAWS, VoiceOver<br>
+                            • **Keyboard Navigation**: Test tab order and focus management<br>
+                            • **Color Contrast**: Test WCAG 2.1 AA compliance<br>
+                            • **Semantic HTML**: Test proper HTML structure<br>
+                            • **ARIA Implementation**: Test labels and descriptions<br><br>
+                            
+                            **7. TEST DATA MANAGEMENT**<br><br>
+                            
+                            **Test Data Strategy**<br>
+                            • **Factory Pattern**: Create reusable test data generators<br>
+                            • **Seed Data**: Provide consistent database states<br>
+                            • **Mock Data**: Generate realistic fake data<br>
+                            • **Test Isolation**: Ensure tests don't interfere<br>
+                            • **Cleanup Scripts**: Reset state between tests<br><br>
+                            
+                            **8. CONTINUOUS TESTING PIPELINE**<br><br>
+                            
+                            **CI/CD Integration**<br>
+                            • **Pre-commit Hooks**: Run linting and quick tests<br>
+                            • **Pull Request Testing**: Run full test suite on PRs<br>
+                            • **Staging Environment**: Run integration tests<br>
+                            • **Production Monitoring**: Run smoke tests post-deployment<br>
+                            • **Scheduled Testing**: Run comprehensive tests nightly<br><br>
+                            
+                            **DELIVERABLE STRUCTURE**:<br><br>
+                            
+                            **📁 tests/**<br>
+                            ├── **unit/** (Component and function tests)<br>
+                            ├── **integration/** (API and service integration)<br>
+                            ├── **e2e/** (End-to-end user workflows)<br>
+                            ├── **performance/** (Load and stress tests)<br>
+                            ├── **security/** (Security and penetration tests)<br>
+                            ├── **accessibility/** (A11y and usability tests)<br>
+                            ├── **fixtures/** (Test data and mocks)<br>
+                            └── **utils/** (Test helpers and utilities)<br><br>
+                            
+                            **TEST CONFIGURATION FILES**:<br>
+                            • jest.config.js / vitest.config.js<br>
+                            • cypress.config.js / playwright.config.js<br>
+                            • .eslintrc.test.js<br>
+                            • test-setup.js<br>
+                            • coverage.config.js<br><br>
+                            
+                            **QUALITY GATES**:<br>
+                            • **Code Coverage**: Minimum 95% line coverage<br>
+                            • **Performance**: API responses < 200ms<br>
+                            • **Accessibility**: WCAG 2.1 AA compliance<br>
+                            • **Security**: Zero high/critical vulnerabilities<br>
+                            • **Cross-Browser**: Support last 2 versions of major browsers<br><br>
+                            
+                            **MONITORING & REPORTING**:<br>
+                            • Test result dashboards<br>
+                            • Coverage reports with trends<br>
+                            • Performance benchmarks<br>
+                            • Security scan results<br>
+                            • Accessibility audit reports<br><br>
+                            
+                            **OUTPUT**: Provide complete, runnable test files with setup instructions, mock data, and CI/CD integration examples.
+                        </div>
+                        <p><strong>✅ Testing Strategy:</strong></p>
+                        <ul>
+                            <li>Cover happy path and error scenarios</li>
+                            <li>Test boundary conditions and edge cases</li>
+                            <li>Include regression tests for bug prevention</li>
+                            <li>Set up continuous testing workflows</li>
+                            <li>Validate performance requirements</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Step 5: Integration -->
+                <div class="step-card" data-step="5">
+                    <div class="step-header">
+                        <div class="step-number">5</div>
+                        <div class="step-title">v0.dev Integration & Deployment</div>
+                        <input type="checkbox" class="step-checkbox" data-step="5">
+                    </div>
+                    <div class="step-description">
+                        Seamlessly integrate your tested code into v0.dev environment. Deploy with confidence knowing your feature is production-ready.
+                        <br><br>
+                        <strong>🎯 Platform:</strong> 
+                        <span style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; margin-right: 8px;">v0.dev</span>
+                        <span style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem;">Manual Integration</span>
+                        <br><br>
+                        <strong>📋 Action:</strong> Copy code from Claude Desktop/Code → Paste into v0.dev → Test & Deploy
+                    </div>
+                    <button class="expand-btn" onclick="toggleStep(5)">View Detailed Guide</button>
+                    <div class="step-content" id="step-5-content">
+                        <ul class="checklist">
+                            <li><input type="checkbox"> Review and organize code files in proper directory structure</li>
+                            <li><input type="checkbox"> Update package.json dependencies and scripts</li>
+                            <li><input type="checkbox"> Configure environment variables and settings</li>
+                            <li><input type="checkbox"> Paste code into v0.dev project with proper imports</li>
+                            <li><input type="checkbox"> Run local tests to verify integration</li>
+                            <li><input type="checkbox"> Commit changes with descriptive messages</li>
+                            <li><input type="checkbox"> Deploy to staging environment for testing</li>
+                            <li><input type="checkbox"> Validate functionality in production environment</li>
+                        </ul>
+                        <p><strong>🔧 Integration Best Practices:</strong></p>
+                        <ul>
+                            <li>Follow your project's naming conventions</li>
+                            <li>Update documentation and README files</li>
+                            <li>Verify all external dependencies are available</li>
+                            <li>Test in multiple browsers/environments</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Step 6: CI/CD -->
+                <div class="step-card" data-step="6">
+                    <div class="step-header">
+                        <div class="step-number">6</div>
+                        <div class="step-title">Automated CI/CD Pipeline</div>
+                        <input type="checkbox" class="step-checkbox" data-step="6">
+                    </div>
+                    <div class="step-description">
+                        Set up automated testing, building, and deployment pipelines. Ensure consistent, reliable deployments with proper monitoring and rollback capabilities.
+                        <br><br>
+                        <strong>🎯 Platform:</strong> 
+                        <span style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; margin-right: 8px;">Claude Desktop</span>
+                        <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem;">Claude Code</span>
+                        <br><br>
+                        <strong>💾 Generate:</strong> GitHub Actions, Docker configs, deployment scripts → Save to your repo
+                    </div>
+                    <button class="expand-btn" onclick="toggleStep(6)">View Detailed Guide</button>
+                    <div class="step-content" id="step-6-content">
+                        <div class="prompt-box">
+                            <strong>🔄 Copy This ENHANCED Prompt Template:</strong>
+                            **ROLE**: You are a Senior DevOps Engineer and Platform Architect with expertise in enterprise-grade CI/CD pipelines, cloud infrastructure, and deployment automation.<br><br>
+                            
+                            **CONTEXT**: Design and implement a complete CI/CD ecosystem for this application:<br>
+                            • **Application Type**: [Web app/API/Mobile/Desktop]<br>
+                            • **Tech Stack**: [React/Node.js/Python/etc.]<br>
+                            • **Target Platform**: [AWS/GCP/Azure/Vercel/Netlify]<br>
+                            • **Team Size**: [Solo developer/Small team/Enterprise]<br>
+                            • **Deployment Model**: [Serverless/Container/VM/Hybrid]<br><br>
+                            
+                            **COMPREHENSIVE CI/CD REQUIREMENTS**:<br><br>
+                            
+                            **1. SOURCE CODE MANAGEMENT**<br><br>
+                            
+                            **Git Workflow Strategy**<br>
+                            • **Branching Model**: [GitFlow/GitHub Flow/GitLab Flow]<br>
+                            • **Branch Protection Rules**: Require PR reviews, status checks<br>
+                            • **Commit Standards**: Conventional commits with semantic versioning<br>
+                            • **Pre-commit Hooks**: Linting, formatting, security scanning<br>
+                            • **Merge Strategies**: Squash commits, linear history maintenance<br><br>
+                            
+                            **Code Quality Gates**<br>
+                            • **Static Analysis**: ESLint, Prettier, SonarQube integration<br>
+                            • **Security Scanning**: Snyk, OWASP dependency check<br>
+                            • **License Compliance**: Check for license compatibility<br>
+                            • **Code Coverage**: Minimum 90% coverage requirement<br>
+                            • **Performance Budgets**: Bundle size and Core Web Vitals<br><br>
+                            
+                            **2. CONTINUOUS INTEGRATION PIPELINE**<br><br>
+                            
+                            **Build Stage**<br>
+                            • **Multi-Environment Builds**: Development, staging, production<br>
+                            • **Dependency Caching**: npm/yarn/pip cache optimization<br>
+                            • **Parallel Execution**: Concurrent job execution for speed<br>
+                            • **Build Artifacts**: Optimized bundles, source maps, documentation<br>
+                            • **Docker Image Building**: Multi-stage builds with layer caching<br><br>
+                            
+                            **Testing Stage**<br>
+                            • **Unit Tests**: Fast feedback with parallel execution<br>
+                            • **Integration Tests**: Database and API testing<br>
+                            • **End-to-End Tests**: Critical user flow validation<br>
+                            • **Performance Tests**: Load testing and benchmarks<br>
+                            • **Security Tests**: SAST, DAST, dependency scanning<br>
+                            • **Accessibility Tests**: WCAG compliance validation<br><br>
+                            
+                            **Quality Assurance**<br>
+                            • **Code Coverage Reports**: Detailed coverage analysis<br>
+                            • **Performance Metrics**: Bundle size, loading time analysis<br>
+                            • **Security Reports**: Vulnerability assessment results<br>
+                            • **Compliance Checks**: Industry-specific requirements<br><br>
+                            
+                            **3. CONTINUOUS DEPLOYMENT PIPELINE**<br><br>
+                            
+                            **Deployment Strategies**<br>
+                            • **Blue-Green Deployment**: Zero-downtime deployments<br>
+                            • **Canary Releases**: Gradual rollout with traffic splitting<br>
+                            • **Rolling Updates**: Progressive instance replacement<br>
+                            • **Feature Flags**: A/B testing and gradual feature rollout<br>
+                            • **Rollback Mechanisms**: Automated failure detection and reversion<br><br>
+                            
+                            **Environment Management**<br>
+                            • **Development**: Continuous deployment from feature branches<br>
+                            • **Staging**: Production-like environment for final validation<br>
+                            • **Production**: Automated deployment with approval gates<br>
+                            • **Preview Environments**: PR-based temporary environments<br>
+                            • **Disaster Recovery**: Multi-region backup environments<br><br>
+                            
+                            **4. INFRASTRUCTURE AS CODE**<br><br>
+                            
+                            **Cloud Infrastructure** ([Terraform/CDK/CloudFormation])<br>
+                            • **VPC and Networking**: Secure network architecture<br>
+                            • **Load Balancers**: Application and network load balancing<br>
+                            • **Auto Scaling**: Dynamic resource scaling based on metrics<br>
+                            • **Database Clusters**: High-availability database setup<br>
+                            • **CDN Configuration**: Global content delivery optimization<br>
+                            • **SSL/TLS Management**: Automated certificate provisioning<br><br>
+                            
+                            **Container Orchestration** ([Kubernetes/ECS/Cloud Run])<br>
+                            • **Pod Specifications**: Resource limits and health checks<br>
+                            • **Service Mesh**: Inter-service communication and security<br>
+                            • **Ingress Controllers**: Traffic routing and SSL termination<br>
+                            • **Persistent Storage**: Data persistence and backup strategies<br>
+                            • **Secrets Management**: Secure credential and configuration handling<br><br>
+                            
+                            **5. MONITORING AND OBSERVABILITY**<br><br>
+                            
+                            **Application Monitoring**<br>
+                            • **APM Integration**: [New Relic/Datadog/AppDynamics]<br>
+                            • **Error Tracking**: [Sentry/Bugsnag/Rollbar] integration<br>
+                            • **Performance Monitoring**: Response times, throughput, errors<br>
+                            • **User Experience**: Real User Monitoring (RUM)<br>
+                            • **Business Metrics**: Custom KPI tracking and alerting<br><br>
+                            
+                            **Infrastructure Monitoring**<br>
+                            • **System Metrics**: CPU, memory, disk, network monitoring<br>
+                            • **Log Aggregation**: [ELK Stack/Splunk/CloudWatch Logs]<br>
+                            • **Distributed Tracing**: Request flow across microservices<br>
+                            • **Database Monitoring**: Query performance and connections<br>
+                            • **Security Monitoring**: Intrusion detection and audit logs<br><br>
+                            
+                            **Alerting and Incident Response**<br>
+                            • **Alert Routing**: [PagerDuty/Opsgenie] integration<br>
+                            • **Escalation Policies**: Multi-tier response procedures<br>
+                            • **Runbooks**: Automated incident response playbooks<br>
+                            • **Post-Mortem Process**: Incident analysis and learning<br><br>
+                            
+                            **6. SECURITY AND COMPLIANCE**<br><br>
+                            
+                            **Security Pipeline Integration**<br>
+                            • **SAST Tools**: Static application security testing<br>
+                            • **DAST Tools**: Dynamic application security testing<br>
+                            • **Container Scanning**: Image vulnerability assessment<br>
+                            • **Secrets Scanning**: Prevent credential exposure<br>
+                            • **Compliance Scanning**: SOC2, PCI-DSS, HIPAA validation<br><br>
+                            
+                            **Access Control**<br>
+                            • **RBAC Implementation**: Role-based access controls<br>
+                            • **SSO Integration**: Single sign-on with identity providers<br>
+                            • **API Security**: Rate limiting, authentication, authorization<br>
+                            • **Network Security**: VPN, firewalls, security groups<br><br>
+                            
+                            **7. BACKUP AND DISASTER RECOVERY**<br><br>
+                            
+                            **Data Protection**<br>
+                            • **Automated Backups**: Scheduled database and file backups<br>
+                            • **Point-in-Time Recovery**: Granular data restoration<br>
+                            • **Cross-Region Replication**: Geographic data distribution<br>
+                            • **Backup Testing**: Regular restore procedure validation<br><br>
+                            
+                            **Business Continuity**<br>
+                            • **RTO/RPO Definitions**: Recovery time and point objectives<br>
+                            • **Failover Procedures**: Automated disaster recovery<br>
+                            • **Data Migration**: Safe data movement procedures<br>
+                            • **Communication Plans**: Stakeholder notification procedures<br><br>
+                            
+                            **PLATFORM-SPECIFIC IMPLEMENTATIONS**:<br><br>
+                            
+                            **🔄 GitHub Actions Workflow**<br>
+                            • Complete .github/workflows/*.yml files<br>
+                            • Reusable workflow templates<br>
+                            • Matrix builds for multiple environments<br>
+                            • Secrets and environment management<br><br>
+                            
+                            **🔄 GitLab CI/CD Configuration**<br>
+                            • .gitlab-ci.yml with stages and jobs<br>
+                            • Pipeline templates and includes<br>
+                            • Auto DevOps configuration<br>
+                            • Registry and deployment integration<br><br>
+                            
+                            **🔄 AWS CodePipeline Setup**<br>
+                            • CodeBuild, CodeDeploy, CodeCommit integration<br>
+                            • CloudFormation templates<br>
+                            • IAM roles and policies<br>
+                            • Multi-account deployment strategies<br><br>
+                            
+                            **🔄 Azure DevOps Pipelines**<br>
+                            • azure-pipelines.yml configuration<br>
+                            • Build and release pipelines<br>
+                            • Variable groups and service connections<br>
+                            • ARM template deployments<br><br>
+                            
+                            **DELIVERABLE PACKAGE**:<br><br>
+                            
+                            **📁 .github/workflows/** (or equivalent)<br>
+                            ├── **ci.yml** (Continuous Integration)<br>
+                            ├── **cd.yml** (Continuous Deployment)<br>
+                            ├── **security.yml** (Security scanning)<br>
+                            ├── **performance.yml** (Performance testing)<br>
+                            └── **release.yml** (Release management)<br><br>
+                            
+                            **📁 infrastructure/**<br>
+                            ├── **terraform/** (Infrastructure as Code)<br>
+                            ├── **docker/** (Container configurations)<br>
+                            ├── **k8s/** (Kubernetes manifests)<br>
+                            └── **monitoring/** (Observability setup)<br><br>
+                            
+                            **📁 scripts/**<br>
+                            ├── **deploy.sh** (Deployment automation)<br>
+                            ├── **rollback.sh** (Rollback procedures)<br>
+                            ├── **health-check.sh** (Health validation)<br>
+                            └── **backup.sh** (Backup automation)<br><br>
+                            
+                            **CONFIGURATION FILES**:<br>
+                            • Dockerfile and docker-compose.yml<br>
+                            • package.json with deployment scripts<br>
+                            • Environment configuration templates<br>
+                            • Security policy configurations<br>
+                            • Monitoring dashboard templates<br><br>
+                            
+                            **DOCUMENTATION DELIVERABLES**:<br>
+                            • Pipeline architecture diagrams<br>
+                            • Deployment runbooks and procedures<br>
+                            • Incident response playbooks<br>
+                            • Performance benchmarking reports<br>
+                            • Security compliance checklists<br><br>
+                            
+                            **OUTPUT**: Provide complete, production-ready CI/CD configuration files with detailed setup instructions, security best practices, and operational procedures.
+                        </div>
+                        <p><strong>🚀 Popular Platform Configurations:</strong></p>
+                        <ul>
+                            <li><strong>Vercel:</strong> Automatic deployments with preview branches</li>
+                            <li><strong>Netlify:</strong> Form handling and edge functions</li>
+                            <li><strong>GitHub Actions:</strong> Custom workflows and matrix builds</li>
+                            <li><strong>AWS:</strong> Serverless and container deployments</li>
+                            <li><strong>Docker:</strong> Containerized deployment strategies</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Step 7: Debug & Optimize -->
+                <div class="step-card" data-step="7">
+                    <div class="step-header">
+                        <div class="step-number">7</div>
+                        <div class="step-title">Debug, Monitor & Optimize</div>
+                        <input type="checkbox" class="step-checkbox" data-step="7">
+                    </div>
+                    <div class="step-description">
+                        Fine-tune your application for optimal performance. Identify and resolve issues, optimize for speed and scalability, and implement monitoring.
+                        <br><br>
+                        <strong>🎯 Platform:</strong> 
+                        <span style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem; margin-right: 8px;">Claude Desktop</span>
+                        <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem;">Claude Code</span>
+                        <br><br>
+                        <strong>🔄 Workflow:</strong> Analysis in Claude Desktop → Implementation in Claude Code → Deploy via v0.dev
+                    </div>
+                    <button class="expand-btn" onclick="toggleStep(7)">View Detailed Guide</button>
+                    <div class="step-content" id="step-7-content">
+                        <div class="prompt-box">
+                            <strong>🐛 Copy This ENHANCED Prompt Template:</strong>
+                            **ROLE**: You are a Senior Performance Engineer and Debugging Specialist with expertise in production system optimization, root cause analysis, and enterprise-scale troubleshooting.<br><br>
+                            
+                            **CONTEXT**: Comprehensive application analysis and optimization for production readiness.<br><br>
+                            
+                            **CURRENT APPLICATION STATE**:<br>
+                            • **Application Type**: [Web app/API/Mobile/Desktop]<br>
+                            • **Tech Stack**: [Frontend/Backend/Database technologies]<br>
+                            • **Environment**: [Development/Staging/Production]<br>
+                            • **User Scale**: [Concurrent users/Daily active users]<br>
+                            • **Performance Targets**: [Response time/Throughput/Uptime SLAs]<br><br>
+                            
+                            **ISSUE ANALYSIS** (if debugging specific problems):<br>
+                            **Problem Description**: [Detailed issue description]<br>
+                            **Error Messages/Stack Traces**:<br>
+                            ```<br>
+                            [Paste complete error logs and stack traces]<br>
+                            ```<br>
+                            **Reproduction Steps**: [Step-by-step reproduction guide]<br>
+                            **Impact Assessment**: [User impact, business impact, frequency]<br><br>
+                            
+                            **APPLICATION CODE FOR ANALYSIS**:<br>
+                            ```<br>
+                            [Paste relevant code sections - components, API endpoints, database queries, etc.]<br>
+                            ```<br><br>
+                            
+                            **PERFORMANCE METRICS** (if available):<br>
+                            ```<br>
+                            [Paste performance data - response times, memory usage, CPU utilization, database metrics]<br>
+                            ```<br><br>
+                            
+                            **COMPREHENSIVE ANALYSIS FRAMEWORK**:<br><br>
+                            
+                            **1. ROOT CAUSE ANALYSIS**<br><br>
+                            
+                            **Frontend Performance Investigation**<br>
+                            • **JavaScript Profiling**: Identify CPU-intensive operations and bottlenecks<br>
+                            • **Memory Analysis**: Detect memory leaks, excessive DOM nodes, closure issues<br>
+                            • **Network Optimization**: Analyze resource loading, caching, compression<br>
+                            • **Rendering Performance**: Investigate layout thrashing, paint optimization<br>
+                            • **Bundle Analysis**: Identify code splitting opportunities and unused dependencies<br><br>
+                            
+                            **Backend Performance Investigation**<br>
+                            • **API Response Analysis**: Profile endpoint performance and identify slow queries<br>
+                            • **Database Optimization**: Query analysis, indexing strategies, connection pooling<br>
+                            • **Memory Management**: Heap analysis, garbage collection optimization<br>
+                            • **Concurrency Issues**: Deadlocks, race conditions, thread pool analysis<br>
+                            • **External Dependencies**: Third-party API performance and timeout handling<br><br>
+                            
+                            **Infrastructure Analysis**<br>
+                            • **Resource Utilization**: CPU, memory, disk I/O, network bottlenecks<br>
+                            • **Scaling Limitations**: Horizontal vs vertical scaling opportunities<br>
+                            • **Load Balancing**: Traffic distribution and health check optimization<br>
+                            • **Caching Strategy**: Redis/Memcached optimization, CDN utilization<br>
+                            • **Database Performance**: Query optimization, replica lag, connection limits<br><br>
+                            
+                            **2. SYSTEMATIC DEBUGGING APPROACH**<br><br>
+                            
+                            **Error Classification and Prioritization**<br>
+                            • **Critical Errors**: Data corruption, security vulnerabilities, system crashes<br>
+                            • **High Priority**: User-facing errors, performance degradation, payment issues<br>
+                            • **Medium Priority**: Edge cases, minor UX issues, logging problems<br>
+                            • **Low Priority**: Cosmetic issues, documentation gaps, technical debt<br><br>
+                            
+                            **Debugging Methodology**<br>
+                            • **Reproduce Locally**: Step-by-step local environment setup<br>
+                            • **Isolate Components**: Narrow down the problem scope<br>
+                            • **Log Analysis**: Structured logging and correlation IDs<br>
+                            • **State Inspection**: Database state, cache state, session data<br>
+                            • **Timeline Analysis**: Sequence of events leading to the issue<br><br>
+                            
+                            **3. PERFORMANCE OPTIMIZATION STRATEGIES**<br><br>
+                            
+                            **Frontend Optimization**<br>
+                            • **Code Splitting**: Implement lazy loading and dynamic imports<br>
+                            • **Image Optimization**: WebP conversion, responsive images, lazy loading<br>
+                            • **Critical CSS**: Inline above-the-fold styles, async CSS loading<br>
+                            • **JavaScript Optimization**: Tree shaking, minification, compression<br>
+                            • **Caching Strategy**: Service workers, HTTP caching, localStorage optimization<br>
+                            • **Third-Party Optimization**: Async loading, resource hints, CDN usage<br><br>
+                            
+                            **Backend Optimization**<br>
+                            • **Database Optimization**: Query optimization, indexing, pagination<br>
+                            • **Caching Implementation**: Redis caching, database query caching<br>
+                            • **API Design**: GraphQL optimization, REST endpoint consolidation<br>
+                            • **Async Processing**: Background jobs, message queues, event-driven architecture<br>
+                            • **Resource Pooling**: Connection pooling, object pooling, thread management<br>
+                            • **Compression**: Gzip/Brotli compression, response payload optimization<br><br>
+                            
+                            **4. MONITORING AND ALERTING ENHANCEMENT**<br><br>
+                            
+                            **Application Performance Monitoring**<br>
+                            • **Real User Monitoring**: Core Web Vitals, user journey tracking<br>
+                            • **Synthetic Monitoring**: Automated uptime and performance checks<br>
+                            • **Error Tracking**: Comprehensive error logging and notification<br>
+                            • **Custom Metrics**: Business KPI tracking and alerting<br>
+                            • **Distributed Tracing**: Request flow analysis across services<br><br>
+                            
+                            **Infrastructure Monitoring**<br>
+                            • **Resource Alerting**: CPU, memory, disk space thresholds<br>
+                            • **Database Monitoring**: Connection counts, slow queries, replication lag<br>
+                            • **Security Monitoring**: Failed login attempts, suspicious activity<br>
+                            • **Business Continuity**: Health checks, failover monitoring<br><br>
+                            
+                            **5. SCALABILITY ANALYSIS**<br><br>
+                            
+                            **Horizontal Scaling Opportunities**<br>
+                            • **Microservices Architecture**: Service decomposition strategies<br>
+                            • **Load Balancing**: Traffic distribution and sticky session handling<br>
+                            • **Database Sharding**: Data partitioning and query routing<br>
+                            • **CDN Optimization**: Global content distribution strategies<br>
+                            • **Auto-scaling**: Dynamic resource allocation based on metrics<br><br>
+                            
+                            **Vertical Scaling Optimization**<br>
+                            • **Resource Right-sizing**: CPU and memory optimization<br>
+                            • **Database Tuning**: Configuration parameter optimization<br>
+                            • **Connection Optimization**: Pool sizing and timeout configuration<br>
+                            • **Memory Management**: Heap sizing and garbage collection tuning<br><br>
+                            
+                            **6. SECURITY HARDENING**<br><br>
+                            
+                            **Vulnerability Assessment**<br>
+                            • **OWASP Top 10**: Comprehensive security audit<br>
+                            • **Dependency Scanning**: Third-party vulnerability assessment<br>
+                            • **Code Review**: Security-focused static analysis<br>
+                            • **Penetration Testing**: Simulated attack scenarios<br>
+                            • **Compliance Validation**: Industry-specific security requirements<br><br>
+                            
+                            **Security Implementation**<br>
+                            • **Input Validation**: Comprehensive sanitization and validation<br>
+                            • **Authentication Enhancement**: Multi-factor authentication, session management<br>
+                            • **Authorization Improvement**: Role-based access control refinement<br>
+                            • **Data Protection**: Encryption at rest and in transit<br>
+                            • **API Security**: Rate limiting, API key management, CORS configuration<br><br>
+                            
+                            **DELIVERABLE FRAMEWORK**:<br><br>
+                            
+                            **🔍 DIAGNOSTIC REPORT**<br>
+                            **Executive Summary**: Traffic light status (🟢/🟡/🔴) with key findings<br>
+                            **Root Cause Analysis**: Detailed technical analysis with evidence<br>
+                            **Impact Assessment**: User impact, business impact, technical debt<br>
+                            **Risk Analysis**: Probability and severity of related issues<br><br>
+                            
+                            **⚡ OPTIMIZATION ROADMAP**<br>
+                            **Quick Wins** (0-2 weeks):<br>
+                            • Immediate performance improvements with minimal effort<br>
+                            • Critical bug fixes and security patches<br>
+                            • Configuration optimizations and feature flags<br><br>
+                            
+                            **Medium-term Improvements** (2-8 weeks):<br>
+                            • Code refactoring and architectural improvements<br>
+                            • Database optimization and caching implementation<br>
+                            • Monitoring and alerting enhancements<br><br>
+                            
+                            **Long-term Strategic Changes** (2-6 months):<br>
+                            • Major architectural changes and technology upgrades<br>
+                            • Scalability improvements and infrastructure optimization<br>
+                            • Advanced security implementations and compliance<br><br>
+                            
+                            **🛠️ IMPLEMENTATION GUIDE**<br>
+                            **Code Changes**: Specific code modifications with before/after examples<br>
+                            **Configuration Updates**: Infrastructure and application configuration changes<br>
+                            **Testing Strategy**: Validation procedures for each optimization<br>
+                            **Rollback Plans**: Safety procedures for each change<br>
+                            **Success Metrics**: KPIs to measure improvement effectiveness<br><br>
+                            
+                            **📊 PERFORMANCE BENCHMARKS**<br>
+                            **Current State**: Baseline performance metrics<br>
+                            **Expected Improvements**: Projected performance gains<br>
+                            **Monitoring Setup**: Ongoing performance tracking implementation<br>
+                            **Alerting Configuration**: Proactive issue detection and notification<br><br>
+                            
+                            **🔒 SECURITY ENHANCEMENTS**<br>
+                            **Vulnerability Fixes**: Specific security improvements<br>
+                            **Preventive Measures**: Proactive security implementations<br>
+                            **Compliance Updates**: Industry standard adherence<br>
+                            **Security Monitoring**: Threat detection and response procedures<br><br>
+                            
+                            **📈 SCALING RECOMMENDATIONS**<br>
+                            **Immediate Scaling**: Current capacity improvements<br>
+                            **Future Architecture**: Long-term scalability planning<br>
+                            • **Cost Optimization**: Resource efficiency improvements<br>
+                            • **Technology Roadmap**: Strategic technology decisions<br><br>
+                            
+                            **OUTPUT**: Provide actionable, prioritized recommendations with specific implementation steps, code examples, configuration changes, and success measurement criteria.
+                        </div>
+                        <p><strong>🔧 Optimization Checklist:</strong></p>
+                        <ul>
+                            <li>Performance profiling and bottleneck identification</li>
+                            <li>Memory usage optimization and leak detection</li>
+                            <li>Database query optimization and caching strategies</li>
+                            <li>Frontend bundle size and loading performance</li>
+                            <li>Error monitoring and user experience analytics</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Buttons -->
+    <div class="floating-actions">
+        <button class="fab fab-help tooltip" onclick="showHelp()">
+            💡
+            <span class="tooltiptext">Get Help</span>
+        </button>
+        <button class="fab fab-reset tooltip" onclick="resetProgress()">
+            ↻
+            <span class="tooltiptext">Reset Progress</span>
+        </button>
+    </div>
+
+    <script>
+        let completedSteps = new Set();
+        const totalSteps = 7;
+        const estimatedTimes = [30, 45, 20, 60, 30, 45, 40]; // minutes per step
+
+        function updateProgress() {
+            const completed = completedSteps.size;
+            const percentage = Math.round((completed / totalSteps) * 100);
+            
+            // Update stat cards
+            document.getElementById('completed-count').textContent = completed;
+            document.getElementById('remaining-count').textContent = totalSteps - completed;
+            document.getElementById('progress-percent').textContent = percentage + '%';
+            
+            // Calculate estimated time remaining
+            let remainingTime = 0;
+            for (let i = 0; i < totalSteps; i++) {
+                if (!completedSteps.has(i + 1)) {
+                    remainingTime += estimatedTimes[i];
+                }
+            }
+            const hours = Math.floor(remainingTime / 60);
+            const minutes = remainingTime % 60;
+            const timeText = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+            document.getElementById('estimated-time').textContent = timeText;
+            
+            // Update progress bar
+            document.getElementById('progress-fill').style.width = percentage + '%';
+            
+            // Update progress text
+            const progressText = document.getElementById('progress-text');
+            if (percentage === 0) {
+                progressText.textContent = 'Ready to transform your development workflow! 🚀';
+            } else if (percentage === 100) {
+                progressText.textContent = '🎉 Congratulations! Your feature is production-ready and deployed!';
+            } else {
+                const nextStep = getNextStep();
+                progressText.textContent = `${percentage}% complete • Next: ${getStepTitle(nextStep)}`;
+            }
+        }
+
+        function getNextStep() {
+            for (let i = 1; i <= totalSteps; i++) {
+                if (!completedSteps.has(i)) {
+                    return i;
+                }
+            }
+            return null;
+        }
+
+        function getStepTitle(stepNumber) {
+            const titles = [
+                'Define Your Feature Vision',
+                'Generate Core Implementation', 
+                'Expert Code Review & Analysis',
+                'Comprehensive Testing Suite',
+                'v0.dev Integration & Deployment',
+                'Automated CI/CD Pipeline',
+                'Debug, Monitor & Optimize'
+            ];
+            return titles[stepNumber - 1] || '';
+        }
+
+        function toggleStep(stepNumber) {
+            const content = document.getElementById(`step-${stepNumber}-content`);
+            const button = content.previousElementSibling;
+            
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                button.textContent = 'View Detailed Guide';
+            } else {
+                // Close all other steps
+                document.querySelectorAll('.step-content').forEach(el => {
+                    el.classList.remove('active');
+                });
+                document.querySelectorAll('.expand-btn').forEach(btn => {
+                    btn.textContent = 'View Detailed Guide';
+                });
+                
+                // Open this step
+                content.classList.add('active');
+                button.textContent = 'Hide Details';
+                
+                // Smooth scroll to step
+                content.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function resetProgress() {
+            if (confirm('Are you sure you want to reset all progress? This will clear all checkboxes and start fresh.')) {
+                completedSteps.clear();
+                
+                // Reset all checkboxes
+                document.querySelectorAll('.step-checkbox').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                // Reset card states
+                document.querySelectorAll('.step-card').forEach(card => {
+                    card.classList.remove('completed');
+                });
+                
+                document.querySelectorAll('.step-number').forEach(number => {
+                    number.classList.remove('completed');
+                });
+                
+                // Close all expanded sections
+                document.querySelectorAll('.step-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                document.querySelectorAll('.expand-btn').forEach(btn => {
+                    btn.textContent = 'View Detailed Guide';
+                });
+                
+                updateProgress();
+                
+                // Scroll to top
+                document.querySelector('.hero').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function showHelp() {
+            alert('🚀 Welcome to the Claude + v0.dev Workflow!\n\nThis dashboard guides you through building features efficiently:\n\n1️⃣ Start with Step 1 and work sequentially\n2️⃣ Click "View Detailed Guide" for prompts and tips\n3️⃣ Check off steps as you complete them\n4️⃣ Copy prompt templates directly to Claude\n5️⃣ Track your progress with the visual indicators\n\n💡 Pro tip: Each step builds on the previous ones, so follow the sequence for best results!');
+        }
+
+        // Event listeners
+        document.querySelectorAll('.step-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const stepNumber = parseInt(this.dataset.step);
+                const stepCard = document.querySelector(`.step-card[data-step="${stepNumber}"]`);
+                const stepNumberEl = stepCard.querySelector('.step-number');
+                
+                if (this.checked) {
+                    completedSteps.add(stepNumber);
+                    stepCard.classList.add('completed');
+                    stepNumberEl.classList.add('completed');
+                } else {
+                    completedSteps.delete(stepNumber);
+                    stepCard.classList.remove('completed');
+                    stepNumberEl.classList.remove('completed');
+                }
+                
+                updateProgress();
+            });
+        });
+
+        // Smooth scrolling for hero CTA
+        document.querySelector('.hero-cta').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelector('#dashboard').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+        });
+
+        // Initialize
+        updateProgress();
+
+        // Animate elements on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'slideUp 0.6s ease forwards';
+                }
+            });
+        });
+
+        document.querySelectorAll('.step-card').forEach(card => {
+            observer.observe(card);
+        });
+
+        // Add slideUp animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
